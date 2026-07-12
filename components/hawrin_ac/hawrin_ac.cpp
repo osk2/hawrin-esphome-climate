@@ -7,6 +7,8 @@ namespace esphome::hawrin_ac {
 namespace {
 const char *const TAG = "hawrin_ac";
 const uint8_t FULL_STATE_FRAME2[7] = {0x00, 0x11, 0x00, 0x00, 0x08, 0x00, 0x19};
+const uint8_t MODE_FRAME2[7] = {0x00, 0x06, 0x00, 0x00, 0x08, 0x00, 0x0E};
+const uint8_t AUTO_MODE_FRAME2[7] = {0x00, 0x17, 0x00, 0x00, 0x08, 0x00, 0x1F};
 const uint8_t POWER_FRAME2[7] = {0x00, 0x01, 0x00, 0x00, 0x08, 0x00, 0x09};
 const uint8_t ECO_ON_FRAME2[7] = {0x20, 0x0C, 0x00, 0x00, 0x08, 0x00, 0x24};
 const uint8_t ECO_OFF_FRAME2[7] = {0x00, 0x0C, 0x00, 0x00, 0x08, 0x00, 0x04};
@@ -47,6 +49,20 @@ void HawrinACClimate::transmit_state() {
     return;
   }
 
+  switch (this->mode) {
+    case climate::CLIMATE_MODE_HEAT_COOL:
+      this->send_frame_(0x01, 0x71, 0x91, 0x1E, AUTO_MODE_FRAME2, 0x80);
+      return;
+    case climate::CLIMATE_MODE_DRY:
+      this->send_frame_(0x00, 0x73, 0x91, 0x1E, MODE_FRAME2);
+      return;
+    case climate::CLIMATE_MODE_FAN_ONLY:
+      this->send_frame_(0x01, 0x84, 0x91, 0x20, MODE_FRAME2);
+      return;
+    default:
+      break;
+  }
+
   const uint8_t b2 = fan_byte_(this->fan_mode);
   const uint8_t b3 = temp_byte_(this->target_temperature);
   this->send_frame_(b2, b3, 0x90, seq_for_temp_(this->target_temperature), FULL_STATE_FRAME2);
@@ -66,10 +82,10 @@ void HawrinACClimate::send_display_toggle() {
 }
 
 void HawrinACClimate::send_frame_(uint8_t byte2, uint8_t byte3, uint8_t byte6, uint8_t byte7,
-                                  const uint8_t *frame2) {
-  const uint8_t frame0[6] = {0x83, 0x06, byte2, byte3, 0x00, 0x00};
+                                  const uint8_t *frame2, uint8_t byte4) {
+  const uint8_t frame0[6] = {0x83, 0x06, byte2, byte3, byte4, 0x00};
   const uint8_t frame1[8] = {byte6, byte7, 0x00, 0x00, 0x00, 0x00, 0x00,
-                             static_cast<uint8_t>(byte2 ^ byte3 ^ byte6 ^ byte7)};
+                             static_cast<uint8_t>(byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7)};
 
   auto call = this->transmitter_->transmit();
   auto *data = call.get_data();

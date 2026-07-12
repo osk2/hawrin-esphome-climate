@@ -62,7 +62,7 @@ frame2 = byte14..byte20
 Checksum for all currently implemented commands:
 
 ```text
-byte13 = byte2 ^ byte3 ^ byte6 ^ byte7
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7
 ```
 
 ## Full-state cool command
@@ -82,10 +82,60 @@ frame1:
 byte6 = 90
 byte7 = temp group
 byte8..byte12 = 00
-byte13 = byte2 ^ byte3 ^ byte6 ^ byte7
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7
 
 frame2:
 00 11 00 00 08 00 19
+```
+
+`byte4` is `00` for cool full-state frames, so the general checksum reduces to the shorter form above.
+
+## Mode commands
+
+Mode changes use command frames, not the normal cool full-state frame.
+
+Cool mode can be sent as the full-state cool command above. The captured explicit mode command was:
+
+```text
+byte2 = 01
+byte3 = A2
+byte4 = 00
+byte6 = 91
+byte7 = 1D
+frame2 = 00 06 00 00 08 00 0E
+```
+
+Dry mode:
+
+```text
+byte2 = 00
+byte3 = 73
+byte4 = 00
+byte6 = 91
+byte7 = 1E
+frame2 = 00 06 00 00 08 00 0E
+```
+
+Fan-only mode:
+
+```text
+byte2 = 01
+byte3 = 84
+byte4 = 00
+byte6 = 91
+byte7 = 20
+frame2 = 00 06 00 00 08 00 0E
+```
+
+Auto mode is exposed as ESPHome/Home Assistant `heat_cool`:
+
+```text
+byte2 = 01
+byte3 = 71
+byte4 = 80
+byte6 = 91
+byte7 = 1E
+frame2 = 00 17 00 00 08 00 1F
 ```
 
 Temperature encoding:
@@ -141,7 +191,7 @@ The remote only exposes a power toggle. Captured `on` and `off` transitions prod
 byte2 = 04
 byte6 = 8F
 byte7 = 13
-byte13 = byte2 ^ byte3 ^ byte6 ^ byte7
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7
 frame2 = 00 01 00 00 08 00 09
 ```
 
@@ -157,7 +207,7 @@ Eco on:
 byte2 = 03
 byte6 = 91
 byte7 = 05
-byte13 = byte2 ^ byte3 ^ byte6 ^ byte7
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7
 frame2 = 20 0C 00 00 08 00 24
 ```
 
@@ -167,7 +217,7 @@ Eco off:
 byte2 = 00
 byte6 = 91
 byte7 = 05
-byte13 = byte2 ^ byte3 ^ byte6 ^ byte7
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7
 frame2 = 00 0C 00 00 08 00 04
 ```
 
@@ -189,7 +239,7 @@ Display on/off captures were identical, so display is a toggle.
 byte2 = 00
 byte6 = B1
 byte7 = 06
-byte13 = byte2 ^ byte3 ^ byte6 ^ byte7
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7
 frame2 = 00 00 00 00 08 00 08
 ```
 
@@ -234,7 +284,7 @@ Recommended capture method:
    - `byte7`
    - `byte13`
    - `frame2`
-5. Validate whether `byte13 = byte2 ^ byte3 ^ byte6 ^ byte7` still holds.
+5. Validate whether `byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7` still holds.
 6. Replay-test the generated raw command before adding it to `hawrin_ac.cpp`.
 
 A good sample set for a new toggle-like feature:

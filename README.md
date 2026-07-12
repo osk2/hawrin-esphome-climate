@@ -7,6 +7,9 @@ Tested with the **華菱 HG0220E29A** remote control.
 Supported:
 
 - `cool`
+- `dry`
+- `fan_only`
+- `heat_cool` as the remote's auto mode
 - temperature `20-30`
 - fan `auto`, `low`, `medium`, `high`
 - preset `eco`
@@ -16,6 +19,7 @@ Known limitation:
 
 - `off` uses the original remote's power toggle code. Without a real AC state sensor it can get out of sync.
 - `display` is also a toggle; the captured on/off codes are identical.
+- `eco` is sent as a command/preset, not encoded into every full-state climate frame.
 
 Example:
 
