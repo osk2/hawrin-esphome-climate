@@ -21,3 +21,13 @@ button:
     on_press:
       - lambda: |-
           id(bedroom_ac).send_display_toggle();
+  - platform: template
+    name: "Bedroom AC Vertical Swing Toggle"
+    on_press:
+      - lambda: |-
+          id(bedroom_ac).send_vertical_swing_toggle();
+  - platform: template
+    name: "Bedroom AC Horizontal Swing Toggle"
+    on_press:
+      - lambda: |-
+          id(bedroom_ac).send_horizontal_swing_toggle();

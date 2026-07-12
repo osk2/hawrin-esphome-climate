@@ -12,7 +12,11 @@ const uint8_t AUTO_MODE_FRAME2[7] = {0x00, 0x17, 0x00, 0x00, 0x08, 0x00, 0x1F};
 const uint8_t POWER_FRAME2[7] = {0x00, 0x01, 0x00, 0x00, 0x08, 0x00, 0x09};
 const uint8_t ECO_ON_FRAME2[7] = {0x20, 0x0C, 0x00, 0x00, 0x08, 0x00, 0x24};
 const uint8_t ECO_OFF_FRAME2[7] = {0x00, 0x0C, 0x00, 0x00, 0x08, 0x00, 0x04};
+const uint8_t SLEEP_FRAME2[7] = {0x00, 0x03, 0x00, 0x00, 0x08, 0x00, 0x0B};
+const uint8_t BOOST_FRAME2[7] = {0x00, 0x04, 0x00, 0x00, 0x08, 0x00, 0x0C};
 const uint8_t DISPLAY_FRAME2[7] = {0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x08};
+const uint8_t VERTICAL_SWING_FRAME2[7] = {0x00, 0x07, 0x00, 0x00, 0x08, 0x00, 0x0F};
+const uint8_t HORIZONTAL_SWING_FRAME2[7] = {0x00, 0x08, 0x00, 0x00, 0x08, 0x00, 0x00};
 
 void encode_byte(remote_base::RemoteTransmitData *data, uint8_t value) {
   for (uint8_t i = 0; i < 8; i++)
@@ -35,7 +39,19 @@ void HawrinACClimate::control(const climate::ClimateCall &call) {
   if (this->mode == climate::CLIMATE_MODE_OFF) {
     this->send_power_toggle_();
   } else if (this->preset.value_or(climate::CLIMATE_PRESET_NONE) != old_preset) {
-    this->send_eco_(this->preset == climate::CLIMATE_PRESET_ECO);
+    const auto new_preset = this->preset.value_or(climate::CLIMATE_PRESET_NONE);
+    if (old_preset == climate::CLIMATE_PRESET_ECO && new_preset != climate::CLIMATE_PRESET_ECO)
+      this->send_eco_(false);
+    if (old_preset == climate::CLIMATE_PRESET_SLEEP && new_preset != climate::CLIMATE_PRESET_SLEEP)
+      this->send_sleep_(false);
+    if (old_preset == climate::CLIMATE_PRESET_BOOST && new_preset != climate::CLIMATE_PRESET_BOOST)
+      this->send_boost_(false);
+    if (new_preset == climate::CLIMATE_PRESET_ECO)
+      this->send_eco_(true);
+    if (new_preset == climate::CLIMATE_PRESET_SLEEP)
+      this->send_sleep_(true);
+    if (new_preset == climate::CLIMATE_PRESET_BOOST)
+      this->send_boost_(true);
   } else {
     this->transmit_state();
   }
@@ -77,15 +93,35 @@ void HawrinACClimate::send_eco_(bool enabled) {
                     enabled ? ECO_ON_FRAME2 : ECO_OFF_FRAME2);
 }
 
+void HawrinACClimate::send_sleep_(bool enabled) {
+  this->send_frame_(enabled ? 0x08 : 0x00, temp_byte_(this->target_temperature), 0x94, 0x22, SLEEP_FRAME2);
+}
+
+void HawrinACClimate::send_boost_(bool enabled) {
+  if (enabled) {
+    this->send_frame_(0x01, 0x02, 0x97, 0x39, BOOST_FRAME2, 0x00, 0x00, 0x90);
+  } else {
+    this->send_frame_(0x00, temp_byte_(this->target_temperature), 0x97, 0x34, BOOST_FRAME2);
+  }
+}
+
 void HawrinACClimate::send_display_toggle() {
   this->send_frame_(0x00, temp_byte_(this->target_temperature), 0xB1, 0x06, DISPLAY_FRAME2);
 }
 
+void HawrinACClimate::send_vertical_swing_toggle() {
+  this->send_frame_(0x80, temp_byte_(this->target_temperature), 0x94, 0x23, VERTICAL_SWING_FRAME2, 0x00, 0x40);
+}
+
+void HawrinACClimate::send_horizontal_swing_toggle() {
+  this->send_frame_(0x00, temp_byte_(this->target_temperature), 0x94, 0x24, HORIZONTAL_SWING_FRAME2, 0x00, 0x80);
+}
+
 void HawrinACClimate::send_frame_(uint8_t byte2, uint8_t byte3, uint8_t byte6, uint8_t byte7,
-                                  const uint8_t *frame2, uint8_t byte4) {
-  const uint8_t frame0[6] = {0x83, 0x06, byte2, byte3, byte4, 0x00};
-  const uint8_t frame1[8] = {byte6, byte7, 0x00, 0x00, 0x00, 0x00, 0x00,
-                             static_cast<uint8_t>(byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7)};
+                                  const uint8_t *frame2, uint8_t byte4, uint8_t byte8, uint8_t byte5) {
+  const uint8_t frame0[6] = {0x83, 0x06, byte2, byte3, byte4, byte5};
+  const uint8_t frame1[8] = {byte6, byte7, byte8, 0x00, 0x00, 0x00, 0x00,
+                             static_cast<uint8_t>(byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8)};
 
   auto call = this->transmitter_->transmit();
   auto *data = call.get_data();

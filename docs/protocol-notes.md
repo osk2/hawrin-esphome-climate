@@ -62,7 +62,7 @@ frame2 = byte14..byte20
 Checksum for all currently implemented commands:
 
 ```text
-byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8
 ```
 
 ## Full-state cool command
@@ -82,13 +82,13 @@ frame1:
 byte6 = 90
 byte7 = temp group
 byte8..byte12 = 00
-byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8
 
 frame2:
 00 11 00 00 08 00 19
 ```
 
-`byte4` is `00` for cool full-state frames, so the general checksum reduces to the shorter form above.
+`byte4`, `byte5`, and `byte8` are `00` for cool full-state frames, so the general checksum reduces to a shorter form.
 
 ## Mode commands
 
@@ -191,7 +191,7 @@ The remote only exposes a power toggle. Captured `on` and `off` transitions prod
 byte2 = 04
 byte6 = 8F
 byte7 = 13
-byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8
 frame2 = 00 01 00 00 08 00 09
 ```
 
@@ -207,7 +207,7 @@ Eco on:
 byte2 = 03
 byte6 = 91
 byte7 = 05
-byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8
 frame2 = 20 0C 00 00 08 00 24
 ```
 
@@ -217,7 +217,7 @@ Eco off:
 byte2 = 00
 byte6 = 91
 byte7 = 05
-byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8
 frame2 = 00 0C 00 00 08 00 04
 ```
 
@@ -231,6 +231,76 @@ eco off:
 83 06 00 A2 00 00 91 05 00 00 00 00 00 36 00 0C 00 00 08 00 04
 ```
 
+## Sleep preset
+
+Sleep mode is a command, not the normal full-state frame. Unlike display and swing, sleep on/off captures are different, so it is exposed as the standard ESPHome `sleep` preset.
+
+Sleep on:
+
+```text
+byte2 = 08
+byte6 = 94
+byte7 = 22
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8
+frame2 = 00 03 00 00 08 00 0B
+```
+
+Sleep off:
+
+```text
+byte2 = 00
+byte6 = 94
+byte7 = 22
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8
+frame2 = 00 03 00 00 08 00 0B
+```
+
+Observed at 26C:
+
+```text
+sleep on:
+83 06 08 A2 00 00 94 22 00 00 00 00 00 1C 00 03 00 00 08 00 0B
+
+sleep off:
+83 06 00 A2 00 00 94 22 00 00 00 00 00 14 00 03 00 00 08 00 0B
+```
+
+## Boost preset
+
+Turbo / powerful mode is exposed as the standard ESPHome `boost` preset. On/off captures are different, so this is not a toggle.
+
+Boost on:
+
+```text
+byte2 = 01
+byte3 = 02
+byte5 = 90
+byte6 = 97
+byte7 = 39
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8
+frame2 = 00 04 00 00 08 00 0C
+```
+
+Boost off:
+
+```text
+byte2 = 00
+byte6 = 97
+byte7 = 34
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8
+frame2 = 00 04 00 00 08 00 0C
+```
+
+Observed:
+
+```text
+boost on:
+83 06 01 02 00 90 97 39 00 00 00 00 00 3D 00 04 00 00 08 00 0C
+
+boost off at 26C:
+83 06 00 A2 00 00 97 34 00 00 00 00 00 01 00 04 00 00 08 00 0C
+```
+
 ## Display
 
 Display on/off captures were identical, so display is a toggle.
@@ -239,7 +309,7 @@ Display on/off captures were identical, so display is a toggle.
 byte2 = 00
 byte6 = B1
 byte7 = 06
-byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8
 frame2 = 00 00 00 00 08 00 08
 ```
 
@@ -247,6 +317,42 @@ Observed at 26C:
 
 ```text
 83 06 00 A2 00 00 B1 06 00 00 00 00 00 15 00 00 00 00 08 00 08
+```
+
+## Swing
+
+Vertical swing on/off captures were identical, so vertical swing is exposed as a toggle.
+
+```text
+byte2 = 80
+byte6 = 94
+byte7 = 23
+byte8 = 40
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8
+frame2 = 00 07 00 00 08 00 0F
+```
+
+Observed at 26C:
+
+```text
+83 06 80 A2 00 00 94 23 40 00 00 00 00 D5 00 07 00 00 08 00 0F
+```
+
+Horizontal swing on/off captures were identical, so horizontal swing is exposed as a toggle.
+
+```text
+byte2 = 00
+byte6 = 94
+byte7 = 24
+byte8 = 80
+byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8
+frame2 = 00 08 00 00 08 00 00
+```
+
+Observed at 26C:
+
+```text
+83 06 00 A2 00 00 94 24 80 00 00 00 00 92 00 08 00 00 08 00 00
 ```
 
 ## Earlier false starts / caution
@@ -284,7 +390,7 @@ Recommended capture method:
    - `byte7`
    - `byte13`
    - `frame2`
-5. Validate whether `byte13 = byte2 ^ byte3 ^ byte4 ^ byte6 ^ byte7` still holds.
+5. Validate whether `byte13 = byte2 ^ byte3 ^ byte4 ^ byte5 ^ byte6 ^ byte7 ^ byte8` still holds.
 6. Replay-test the generated raw command before adding it to `hawrin_ac.cpp`.
 
 A good sample set for a new toggle-like feature:
