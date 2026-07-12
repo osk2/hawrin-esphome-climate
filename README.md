@@ -1,4 +1,4 @@
-# Vizo AC ESPHome external component
+# Hawrin AC ESPHome external component
 
 Minimal IR climate encoder derived from captured Pronto/raw codes.
 
@@ -29,7 +29,7 @@ remote_transmitter:
   carrier_duty_percent: 50%
 
 climate:
-  - platform: vizo_ac
+  - platform: hawrin_ac
     id: bedroom_ac
     name: "Bedroom AC"
     transmitter_id: ir_tx
