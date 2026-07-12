@@ -2,6 +2,8 @@
 
 Minimal IR climate encoder derived from captured Pronto/raw codes.
 
+Tested with the **華菱 HG0220E29A** remote control.
+
 Supported:
 
 - `cool`
